@@ -1,26 +1,24 @@
 """Resources: compute requirements of Tasks."""
+
 import functools
 import textwrap
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Literal, Union
 
 import colorama
-from typing_extensions import Literal
 
-from sky import clouds
-from sky import global_user_state
-from sky import sky_logging
-from sky import skypilot_config
-from sky import spot
+from sky import clouds, global_user_state, sky_logging, skypilot_config, spot
 from sky.clouds import service_catalog
 from sky.provision import docker_utils
 from sky.skylet import constants
-from sky.utils import accelerator_registry
-from sky.utils import common_utils
-from sky.utils import log_utils
-from sky.utils import resources_utils
-from sky.utils import schemas
-from sky.utils import tpu_utils
-from sky.utils import ux_utils
+from sky.utils import (
+    accelerator_registry,
+    common_utils,
+    log_utils,
+    resources_utils,
+    schemas,
+    tpu_utils,
+    ux_utils,
+)
 
 logger = sky_logging.init_logger(__name__)
 
@@ -49,23 +47,23 @@ class Resources:
 
     def __init__(
         self,
-        cloud: Optional[clouds.Cloud] = None,
-        instance_type: Optional[str] = None,
-        cpus: Union[None, int, float, str] = None,
-        memory: Union[None, int, float, str] = None,
-        accelerators: Union[None, str, Dict[str, int]] = None,
-        accelerator_args: Optional[Dict[str, str]] = None,
-        use_spot: Optional[bool] = None,
-        spot_recovery: Optional[str] = None,
-        region: Optional[str] = None,
-        zone: Optional[str] = None,
-        image_id: Union[Dict[str, str], str, None] = None,
-        disk_size: Optional[int] = None,
-        disk_tier: Optional[Literal["high", "medium", "low"]] = None,
-        ports: Optional[Union[int, str, List[str], Tuple[str]]] = None,
+        cloud: clouds.Cloud | None = None,
+        instance_type: str | None = None,
+        cpus: None | float | str = None,
+        memory: None | float | str = None,
+        accelerators: None | str | dict[str, int] = None,
+        accelerator_args: dict[str, str] | None = None,
+        use_spot: bool | None = None,
+        spot_recovery: str | None = None,
+        region: str | None = None,
+        zone: str | None = None,
+        image_id: dict[str, str] | str | None = None,
+        disk_size: int | None = None,
+        disk_tier: Literal["high", "medium", "low"] | None = None,
+        ports: int | str | list[str] | tuple[str] | None = None,
         # Internal use only.
-        _docker_login_config: Optional[docker_utils.DockerLoginConfig] = None,
-        _is_image_managed: Optional[bool] = None,
+        _docker_login_config: docker_utils.DockerLoginConfig | None = None,
+        _is_image_managed: bool | None = None,
     ):
         """Initialize a Resources object.
 
@@ -135,8 +133,8 @@ class Resources:
         """
         self._version = self._VERSION
         self._cloud = cloud
-        self._region: Optional[str] = None
-        self._zone: Optional[str] = None
+        self._region: str | None = None
+        self._zone: str | None = None
         self._validate_and_set_region_zone(region, zone)
 
         self._instance_type = instance_type
@@ -325,7 +323,7 @@ class Resources:
         return self._instance_type
 
     @property
-    def cpus(self) -> Optional[str]:
+    def cpus(self) -> str | None:
         """Returns the number of vCPUs that each instance must have.
 
         For example, cpus='4' means each instance must have exactly 4 vCPUs,
@@ -338,7 +336,7 @@ class Resources:
         return self._cpus
 
     @property
-    def memory(self) -> Optional[str]:
+    def memory(self) -> str | None:
         """Returns the memory that each instance must have in GB.
 
         For example, memory='16' means each instance must have exactly 16GB
@@ -353,7 +351,7 @@ class Resources:
 
     @property
     @functools.lru_cache(maxsize=1)
-    def accelerators(self) -> Optional[Dict[str, int]]:
+    def accelerators(self) -> dict[str, int] | None:
         """Returns the accelerators field directly or by inferring.
 
         For example, Resources(AWS, 'p3.2xlarge') has its accelerators field
@@ -367,7 +365,7 @@ class Resources:
         return None
 
     @property
-    def accelerator_args(self) -> Optional[Dict[str, str]]:
+    def accelerator_args(self) -> dict[str, str] | None:
         return self._accelerator_args
 
     @property
@@ -379,7 +377,7 @@ class Resources:
         return self._use_spot_specified
 
     @property
-    def spot_recovery(self) -> Optional[str]:
+    def spot_recovery(self) -> str | None:
         return self._spot_recovery
 
     @property
@@ -387,7 +385,7 @@ class Resources:
         return self._disk_size
 
     @property
-    def image_id(self) -> Optional[Dict[str, str]]:
+    def image_id(self) -> dict[str, str] | None:
         return self._image_id
 
     @property
@@ -395,16 +393,16 @@ class Resources:
         return self._disk_tier
 
     @property
-    def ports(self) -> Optional[List[str]]:
+    def ports(self) -> list[str] | None:
         return self._ports
 
     @property
-    def is_image_managed(self) -> Optional[bool]:
+    def is_image_managed(self) -> bool | None:
         return self._is_image_managed
 
     def _set_cpus(
         self,
-        cpus: Union[None, int, float, str],
+        cpus: None | float | str,
     ) -> None:
         if cpus is None:
             self._cpus = None
@@ -436,7 +434,7 @@ class Resources:
 
     def _set_memory(
         self,
-        memory: Union[None, int, float, str],
+        memory: None | float | str,
     ) -> None:
         if memory is None:
             self._memory = None
@@ -468,8 +466,8 @@ class Resources:
 
     def _set_accelerators(
         self,
-        accelerators: Union[None, str, Dict[str, int]],
-        accelerator_args: Optional[Dict[str, str]],
+        accelerators: None | str | dict[str, int],
+        accelerator_args: dict[str, str] | None,
     ) -> None:
         """Sets accelerators.
 
@@ -535,7 +533,7 @@ class Resources:
                         accelerator_args["runtime_version"] = "2.12.0"
                     logger.info(
                         "Missing runtime_version in accelerator_args, using"
-                        f' default ({accelerator_args["runtime_version"]})'
+                        f" default ({accelerator_args['runtime_version']})"
                     )
 
         self._accelerators = accelerators
@@ -550,7 +548,7 @@ class Resources:
         return self.cloud.need_cleanup_after_preemption(self)
 
     def _validate_and_set_region_zone(
-        self, region: Optional[str], zone: Optional[str]
+        self, region: str | None, zone: str | None
     ) -> None:
         if region is None and zone is None:
             return
@@ -607,7 +605,7 @@ class Resources:
         # if zone is specified.
         self._region, self._zone = self._cloud.validate_region_zone(region, zone)
 
-    def get_valid_regions_for_launchable(self) -> List[clouds.Region]:
+    def get_valid_regions_for_launchable(self) -> list[clouds.Region]:
         """Returns a set of `Region`s that can provision this Resources.
 
         Each `Region` has a list of `Zone`s that can provision this Resources.
@@ -691,8 +689,7 @@ class Resources:
                     cloud_str = f"for any cloud among {enabled_clouds}"
                 with ux_utils.print_exception_no_traceback():
                     raise ValueError(
-                        f"Invalid instance type {self._instance_type!r} "
-                        f"{cloud_str}."
+                        f"Invalid instance type {self._instance_type!r} {cloud_str}."
                     )
             if len(valid_clouds) > 1:
                 with ux_utils.print_exception_no_traceback():
@@ -770,7 +767,7 @@ class Resources:
             if self._use_spot:
                 with ux_utils.print_exception_no_traceback():
                     raise ValueError(
-                        "Local/On-prem mode does not support spot " "instances."
+                        "Local/On-prem mode does not support spot instances."
                     )
             local_instance = clouds.Local.get_default_instance_type()
             if (
@@ -785,10 +782,10 @@ class Resources:
             if self._image_id is not None:
                 with ux_utils.print_exception_no_traceback():
                     raise ValueError(
-                        "Local/On-prem mode does not support custom " "images."
+                        "Local/On-prem mode does not support custom images."
                     )
 
-    def extract_docker_image(self) -> Optional[str]:
+    def extract_docker_image(self) -> str | None:
         if self.image_id is None:
             return None
         if len(self.image_id) == 1 and self.region in self.image_id:
@@ -902,7 +899,7 @@ class Resources:
         if skypilot_config.get_nested(("aws", "security_group_name"), None) is not None:
             with ux_utils.print_exception_no_traceback():
                 raise ValueError(
-                    "Cannot specify ports when AWS security group name is " "specified."
+                    "Cannot specify ports when AWS security group name is specified."
                 )
         if self.cloud is not None:
             self.cloud.check_features_are_supported(
@@ -929,8 +926,8 @@ class Resources:
         self,
         cluster_name_on_cloud: str,
         region: clouds.Region,
-        zones: Optional[List[clouds.Zone]],
-    ) -> Dict[str, Optional[str]]:
+        zones: list[clouds.Zone] | None,
+    ) -> dict[str, str | None]:
         """Converts planned sky.Resources to resource variables.
 
         These variables are divided into two categories: cloud-specific and
@@ -959,8 +956,8 @@ class Resources:
         )
 
     def get_reservations_available_resources(
-        self, specific_reservations: Set[str]
-    ) -> Dict[str, int]:
+        self, specific_reservations: set[str]
+    ) -> dict[str, int]:
         """Returns the number of available reservation resources."""
         if self.use_spot:
             # GCP's & AWS's reservations do not support spot instances. We
@@ -973,7 +970,7 @@ class Resources:
 
     def less_demanding_than(
         self,
-        other: Union[List["Resources"], "Resources"],
+        other: Union[list["Resources"], "Resources"],
         requested_num_nodes: int = 1,
         check_ports: bool = False,
     ) -> bool:
@@ -1133,7 +1130,7 @@ class Resources:
         assert len(override) == 0
         return resources
 
-    def valid_on_region_zones(self, region: str, zones: List[str]) -> bool:
+    def valid_on_region_zones(self, region: str, zones: list[str]) -> bool:
         """Returns whether this Resources is valid on given region and zones"""
         if self.region is not None and self.region != region:
             return False
@@ -1144,7 +1141,7 @@ class Resources:
                 return False
         return True
 
-    def get_required_cloud_features(self) -> Set[clouds.CloudImplementationFeatures]:
+    def get_required_cloud_features(self) -> set[clouds.CloudImplementationFeatures]:
         """Returns the set of cloud features required by this Resources."""
         features = set()
         if self.use_spot:
@@ -1158,7 +1155,7 @@ class Resources:
         return features
 
     @classmethod
-    def from_yaml_config(cls, config: Optional[Dict[str, str]]) -> "Resources":
+    def from_yaml_config(cls, config: dict[str, str] | None) -> "Resources":
         if config is None:
             return Resources()
 
@@ -1202,7 +1199,7 @@ class Resources:
         assert not config, f"Invalid resource args: {config.keys()}"
         return Resources(**resources_fields)
 
-    def to_yaml_config(self) -> Dict[str, Union[str, int]]:
+    def to_yaml_config(self) -> dict[str, str | int]:
         """Returns a yaml-style dict of config for this resource bundle."""
         config = {}
 
